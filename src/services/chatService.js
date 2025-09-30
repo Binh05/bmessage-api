@@ -1,5 +1,14 @@
 const createNewChat = async (reqBody) => {
-  throw new Error("test service error");
+  try {
+    const newChat = {
+      ...reqBody,
+      createAt: new Date(),
+    };
+
+    return newChat;
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const chatService = {
