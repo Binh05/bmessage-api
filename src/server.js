@@ -45,19 +45,19 @@ function START_SERVER() {
   });
 }
 
-START_SERVER();
+// START_SERVER();
 
-// (async () => {
-//   try {
-//     console.log("Connecting to MongoDB Cloud Alats....");
-//     await CONNECT_DB();
-//     console.log("Connected to MongoDB Cloud Alats");
+(async () => {
+  try {
+    console.log("Connecting to MongoDB Cloud Alats....");
+    await CONNECT_DB();
+    console.log("Connected to MongoDB Cloud Alats");
 
-//     START_SERVER();
-//   } catch (error) {
-//     console.error(error);
-//   }
-// })();
+    START_SERVER();
+  } catch (error) {
+    console.error(error);
+  }
+})();
 
 // console.log('Connecting to MongoDB Cloud Alats....')
 // CONNECT_DB()
