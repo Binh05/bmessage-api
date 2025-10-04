@@ -7,7 +7,6 @@ const CHAT_COLLECTION_NAME = "chat";
 const CHAT_COLLECTION_SCHEMA = Joi.object({
   roomId: Joi.string().required().trim().strict(),
   sender: Joi.string().required().min(1).trim().strict(),
-  receive: Joi.string().required().min(1).trim().strict(),
   message: Joi.string().required().min(1).trim().strict(),
 
   createAt: Joi.date().timestamp("javascript").default(Date.now),
@@ -37,9 +36,22 @@ const findOneById = async (id) => {
   }
 };
 
+const getMessageByRoom = async (roomId) => {
+  try {
+    return await GET_DB()
+      .collection(CHAT_COLLECTION_NAME)
+      .find({ roomId: roomId })
+      .sort({ createAt: 1 })
+      .toArray();
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
 export const chatModel = {
   CHAT_COLLECTION_NAME,
   CHAT_COLLECTION_SCHEMA,
   createNew,
   findOneById,
+  getMessageByRoom,
 };

@@ -10,8 +10,6 @@ Router.route("/")
   })
   .post(chatValidation.createNewChat, chatController.createNewChat);
 
-Router.route("/old").get((req, res) =>
-  res.status(200).json({ message: "get v1 old chat route" })
-);
+Router.route("/:id").get(chatController.getMessage);
 
 export const Route_chat = Router;
