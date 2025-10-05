@@ -8,6 +8,8 @@ node_modules
 
 # testing
 /coverage
+/src/jwt.http
+/src/authServer.js
 
 # production
 /build

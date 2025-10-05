@@ -2,6 +2,7 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import { env } from "./config/environment.js";
+import jwt from "jsonwebtoken";
 import chatSocket from "./sockets/chatSocket.js";
 import { Route_V1 } from "./routes/v1/index.js";
 import { errorHandlingMiddleware } from "./middlewares/errorHandlingMiddleware.js";
@@ -18,15 +19,49 @@ function START_SERVER() {
     },
   });
 
-  app.get("/", async (req, res) => {
-    console.log("Collections in DATABASE:");
-    res.end("Hello Binh with socket.io");
-  });
+  // app.get("/", async (req, res) => {
+  //   console.log("Collections in DATABASE:");
+  //   res.end("Hello Binh with socket.io");
+  // });
 
   app.use(express.json());
 
+  //jwt
+
+  const test = [
+    {
+      id: 1,
+      name: "15p",
+      author: "binh",
+    },
+    {
+      id: 2,
+      name: "1 tiet",
+      author: "binh",
+    },
+  ];
+
+  app.get("/test", authenToken, (req, res) => {
+    res.json({ status: "success", data: test });
+  });
+
+  //jwt middleware
+
+  function authenToken(req, res, next) {
+    const authorizationHeader = req.headers["authorization"];
+    // beaer [token]
+    const token = authorizationHeader.split(" ")[1];
+    if (!token) return res.sendStatus(401);
+
+    jwt.verify(token, env.ACCESS_TOKEN_SECRET, (err, data) => {
+      console.log(err, data);
+      if (err) return res.sendStatus(403);
+      next();
+    });
+  }
+
   //socket realtime
-  chatSocket(io);
+  //chatSocket(io);
 
   //route
   app.use("/v1", Route_V1);
@@ -38,26 +73,26 @@ function START_SERVER() {
     console.log(`server is running at http://${env.APP_HOST}:${env.APP_PORT}`);
   });
 
-  exitHook(() => {
-    console.log("Closing MongoDB connect...");
-    CLOSE_DB();
-    console.log("MongoDB connect closed.");
-  });
+  // exitHook(() => {
+  //   console.log("Closing MongoDB connect...");
+  //   CLOSE_DB();
+  //   console.log("MongoDB connect closed.");
+  // });
 }
 
-// START_SERVER();
+START_SERVER();
 
-(async () => {
-  try {
-    console.log("Connecting to MongoDB Cloud Alats....");
-    await CONNECT_DB();
-    console.log("Connected to MongoDB Cloud Alats");
+// (async () => {
+//   try {
+//     console.log("Connecting to MongoDB Cloud Alats....");
+//     await CONNECT_DB();
+//     console.log("Connected to MongoDB Cloud Alats");
 
-    START_SERVER();
-  } catch (error) {
-    console.error(error);
-  }
-})();
+//     START_SERVER();
+//   } catch (error) {
+//     console.error(error);
+//   }
+// })();
 
 // console.log('Connecting to MongoDB Cloud Alats....')
 // CONNECT_DB()
