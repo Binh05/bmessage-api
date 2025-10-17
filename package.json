@@ -16,7 +16,8 @@
     "test": "echo \\\"Error: no test specified\\\" && exit 1",
     "dev": "nodemon src/server.js",
     "client": "nodemon src/client.js",
-    "auth": "nodemon src/authServer.js"
+    "auth": "nodemon src/authServer.js",
+    "start": "node src/server.js"
   },
   "dependencies": {
     "async-exit-hook": "^2.0.1",
