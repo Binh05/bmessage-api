@@ -9,7 +9,7 @@ node_modules
 # testing
 /coverage
 /src/jwt.http
-/src/authServer.js
+/src/peerServer.js
 
 # production
 /build

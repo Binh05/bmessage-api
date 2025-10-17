@@ -9,7 +9,7 @@ Router.get("/", (req, res) => {
   res.status(200).json({ message: "first route for chat api is running" });
 });
 
-Router.use("/login", authRoute);
+Router.use("/auth", authRoute);
 
 Router.use("/chat", authMiddleware.verifyToken, Route_chat);
 

@@ -1,4 +1,4 @@
-import { accessToken } from "../utils/accessToken.js";
+import { tokens } from "../utils/Token.js";
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -6,12 +6,12 @@ const verifyToken = (req, res, next) => {
 
   const token = authHeader.split(" ")[1];
   try {
-    const decoded = accessToken.verifyToken(token);
+    const decoded = tokens.verifyAccessToken(token);
     req.user = decoded;
-    console.log(req.user);
+
     next();
   } catch (error) {
-    return res.status(403).json({ message: "Invalid token" });
+    return res.status(401).json({ message: "Invalid token" });
   }
 };
 
