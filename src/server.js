@@ -30,7 +30,7 @@ function START_SERVER() {
 
   app.use(
     cors({
-      origin: "http://localhost:3000",
+      origin: "https://meeting-ecru.vercel.app/",
       credentials: true,
     })
   );
