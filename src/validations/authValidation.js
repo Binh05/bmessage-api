@@ -1,5 +1,6 @@
 import Joi from "joi";
 import { OBJECT_ID, OBJECT_ID_MESSAGE } from "../utils/validator.js";
+import { tokens } from "../utils/Token.js";
 
 async function validLogin(req, res, next) {
   const valid = Joi.object({
@@ -36,12 +37,8 @@ const validSignUp = async (req, res, next) => {
 };
 
 const validRefreshToken = async (req, res, next) => {
-  const valid = Joi.object({
-    id: Joi.string().pattern(OBJECT_ID).message(OBJECT_ID_MESSAGE).required(),
-  });
-
   try {
-    await valid.validateAsync(req.body);
+    tokens.verifyRefreshToken(req.cookies.refresh_token);
     next();
   } catch (error) {
     res.status(400).json({

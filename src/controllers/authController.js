@@ -5,15 +5,17 @@ const login = async (req, res, next) => {
     const { username, password } = req.body;
     const tokens = await authService.login(username, password);
 
-    res.cookie("refresh_token_id", tokens.refreshToken.id, {
+    const { accessToken, refreshToken } = tokens;
+
+    res.cookie("refresh_token", refreshToken, {
       httpOnly: true,
       secure: false,
       sameSite: "strict",
-      maxAge: tokens.refreshToken.expiredAt - Date.now(),
+      maxAge: 7 * 24 * 60 * 60 * 1000,
       path: "/",
     });
 
-    res.json({ success: true, tokens });
+    res.json({ success: true, accessToken });
   } catch (error) {
     next(error);
   }
@@ -30,8 +32,8 @@ const signUp = async (req, res, next) => {
 
 const refreshToken = async (req, res, next) => {
   try {
-    const tokenId = req.cookies.refresh_token_id;
-    const accessToken = await authService.refreshToken(tokenId);
+    const token = req.cookies.refresh_token;
+    const accessToken = await authService.refreshToken(token);
     res.status(200).json({
       message: "Successed refresh access token",
       accessToken,
@@ -43,15 +45,15 @@ const refreshToken = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
-    const tokenId = req.cookies.refresh_token_id;
-    if (!tokenId) {
+    const token = req.cookies.refresh_token;
+    if (!token) {
       const err = new Error("Refresh token not found");
       err.status = 400;
       throw err;
     }
-    await authService.logout(tokenId);
+    await authService.logout(token);
 
-    res.clearCookie("refresh_token_id", {
+    res.clearCookie("refresh_token", {
       httpOnly: true,
       secure: false,
       sameSite: "strict",

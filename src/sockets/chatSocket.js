@@ -9,6 +9,7 @@ export default function chatSocket(io) {
     socket.on("join-room", (roomId, peerId) => {
       socket.join(roomId);
       socket.to(roomId).emit("user-connected", peerId);
+      user;
     });
 
     socket.on("responsePeerId", (roomId, peerId) => {

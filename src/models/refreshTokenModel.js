@@ -36,6 +36,16 @@ const findOneById = async (tokenId) => {
   }
 };
 
+const findOne = async (token) => {
+  try {
+    return await GET_DB()
+      .collection(REFRESHTOKEN_COLLECTION_NAME)
+      .findOne({ token: token });
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
 const deleteOneById = async (tokenId) => {
   try {
     return await GET_DB()
@@ -46,8 +56,20 @@ const deleteOneById = async (tokenId) => {
   }
 };
 
+const deleteOne = async (data) => {
+  try {
+    return await GET_DB()
+      .collection(REFRESHTOKEN_COLLECTION_NAME)
+      .deleteOne({ token: data });
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
 export const refreshTokenModel = {
   create,
   findOneById,
+  findOne,
   deleteOneById,
+  deleteOne,
 };

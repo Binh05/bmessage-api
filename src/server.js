@@ -16,21 +16,16 @@ function START_SERVER() {
 
   const io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: "http://localhost:3000",
     },
   });
 
-  // app.use(
-  //   cors({
-  //     origin: ["http://localhost:3000"], // cho phép Next.js gọi
-  //     methods: ["GET", "POST", "PUT", "DELETE"],
-  //     credentials: true, // nếu bạn có dùng cookie hoặc JWT trong header
-  //   })
-  // );
+  const localhost = "http://localhost:3000/";
+  const deploy = "https://meeting-ecru.vercel.app/";
 
   app.use(
     cors({
-      origin: "https://meeting-ecru.vercel.app/",
+      origin: "http://localhost:3000",
       credentials: true,
     })
   );
@@ -67,21 +62,12 @@ function START_SERVER() {
 
 (async () => {
   try {
-    // console.log("Connecting to MongoDB Cloud Alats....");
-    // await CONNECT_DB();
-    // console.log("Connected to MongoDB Cloud Alats");
+    console.log("Connecting to MongoDB Cloud Alats....");
+    await CONNECT_DB();
+    console.log("Connected to MongoDB Cloud Alats");
 
     START_SERVER();
   } catch (error) {
     console.error(error);
   }
 })();
-
-// console.log('Connecting to MongoDB Cloud Alats....')
-// CONNECT_DB()
-//   .then(() => console.log("Connected to MongoDB Cloud Alats"))
-//   .then(() => START_SERVER())
-//   .catch(err => {
-//     console.error(err)
-//     process.exit(0)
-//   })

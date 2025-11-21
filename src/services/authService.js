@@ -13,20 +13,15 @@ const login = async (username, password) => {
     const accessToken = tokens.signAccessToken(payload);
     const refreshToken = tokens.signRefreshToken(payload);
 
-    const expiredAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const insertedRef = await refreshTokenModel.create({
+    await refreshTokenModel.create({
       userId: user._id.toString(),
       token: refreshToken,
-
-      expiredAt,
+      expiredAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
     });
 
     return {
       accessToken,
-      refreshToken: {
-        id: insertedRef.insertedId.toString(),
-        expiredAt,
-      },
+      refreshToken,
     };
   } catch (error) {
     throw error;
@@ -44,8 +39,8 @@ const signUp = async (reqBody) => {
   }
 };
 
-const refreshToken = async (tokenId) => {
-  const refToken = await refreshTokenModel.findOneById(tokenId);
+const refreshToken = async (token) => {
+  const refToken = await refreshTokenModel.findOne(token);
   if (!refToken) throw new Error("refresh token not found");
 
   try {
@@ -66,10 +61,10 @@ const refreshToken = async (tokenId) => {
   return newAccessToken;
 };
 
-const logout = async (tokenId) => {
-  if (!tokenId) return;
+const logout = async (refToken) => {
+  if (!refToken) return;
   try {
-    await refreshTokenModel.deleteOneById(tokenId);
+    await refreshTokenModel.deleteOne(refToken);
   } catch (error) {
     throw error;
   }

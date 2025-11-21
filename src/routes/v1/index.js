@@ -10,6 +10,9 @@ Router.get("/", (req, res) => {
 });
 
 Router.use("/auth", authRoute);
+Router.get("/test", authMiddleware.verifyToken, (req, res) => {
+  return res.sendStatus(204);
+});
 
 Router.use("/chat", authMiddleware.verifyToken, Route_chat);
 

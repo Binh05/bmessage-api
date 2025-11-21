@@ -8,9 +8,13 @@ Router.route("/login").post(authValidate.validLogin, authController.login);
 
 Router.route("/signup").post(authValidate.validSignUp, authController.signUp);
 
-Router.route("/refreshtoken").post(
+Router.route("/refresh").post(
   authValidate.validRefreshToken,
   authController.refreshToken
+);
+
+Router.route("/me").post(authValidate.validRefreshToken, (req, res) =>
+  res.sendStatus(204)
 );
 
 Router.route("/logout").post(authController.logout);
