@@ -1,5 +1,4 @@
 import express from "express";
-import { Route_chat } from "./chatRoutes.js";
 import { authRoute } from "./authRoute.js";
 import { authMiddleware } from "../../middlewares/authMiddleware.js";
 
@@ -13,7 +12,5 @@ Router.use("/auth", authRoute);
 Router.get("/test", authMiddleware.verifyToken, (req, res) => {
   return res.sendStatus(204);
 });
-
-Router.use("/chat", authMiddleware.verifyToken, Route_chat);
 
 export const Route_V1 = Router;

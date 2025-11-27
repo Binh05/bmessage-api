@@ -1,75 +1,42 @@
-import { authService } from "../services/authService.js";
-
-const login = async (req, res, next) => {
-  try {
-    const { username, password } = req.body;
-    const tokens = await authService.login(username, password);
-
-    const { accessToken, refreshToken } = tokens;
-
-    res.cookie("refresh_token", refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/",
-    });
-
-    res.json({ success: true, accessToken });
-  } catch (error) {
-    next(error);
-  }
-};
+import User from "../models/User.js";
+import bcrypt from "bcrypt";
 
 const signUp = async (req, res, next) => {
   try {
-    const signUp = await authService.signUp(req.body);
-    res.status(201).json({ signUp });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const refreshToken = async (req, res, next) => {
-  try {
-    const token = req.cookies.refresh_token;
-    const accessToken = await authService.refreshToken(token);
-    res.status(200).json({
-      message: "Successed refresh access token",
-      accessToken,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const logout = async (req, res, next) => {
-  try {
-    const token = req.cookies.refresh_token;
-    if (!token) {
-      const err = new Error("Refresh token not found");
-      err.status = 400;
-      throw err;
+    // kiem tra accesstoken
+    const { username, email, phone, password } = req.body;
+    if (!username || !email || !phone || !password) {
+      return res.status(400).json({ message: "Thiếu thông tin đăng nhập" });
     }
-    await authService.logout(token);
 
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "strict",
-      path: "/",
+    // kiem tra sdt ton tai hay chua
+    const dulicate = await User.findOne({ phone });
+    if (dulicate) {
+      return res.status(409).json({ message: "sdt da ton tai" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.create({
+      username,
+      email,
+      phone,
+      hashedPassword,
     });
-    res.status(200).json({
-      message: "Success logout",
-    });
+
+    res.sendStatus(200);
   } catch (error) {
+    console.log("Loi khi goi signup", error);
     next(error);
   }
 };
 
-export const authController = {
-  login,
-  signUp,
-  refreshToken,
-  logout,
+const signIn = (req, res, next) => {
+  try {
+  } catch (error) {
+    console.log("Loi khi login");
+    next(error);
+  }
 };
+
+export { signUp };

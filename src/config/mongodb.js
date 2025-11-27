@@ -1,32 +1,23 @@
-import { MongoClient, ServerApiVersion } from "mongodb";
-import { env } from './environment.js'
-
-let appDatabaseInstance = null;
-
-const mongoClientInstance = new MongoClient(env.MONGODB_URI, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+import { env } from "./environment.js";
+import mongoose from "mongoose";
 
 async function CONNECT_DB() {
-  await mongoClientInstance.connect();
-
-  appDatabaseInstance = mongoClientInstance.db(env.DATABASE_NAME);
+  try {
+    await mongoose.connect(env.MONGODB_URI, { dbName: env.DATABASE_NAME });
+    console.log("Ket noi database thanh cong");
+  } catch (error) {
+    console.log("Loi khi ket noi database", error);
+    process.exit(1);
+  }
 }
 
 async function CLOSE_DB() {
-  await mongoClientInstance.close();
+  try {
+    await mongoose.connection.close();
+    console.log("Mongo connection closed");
+  } catch (error) {
+    console.log("loi khi ngat ket noi db ", error);
+  }
 }
 
-function GET_DB() {
-  if (!appDatabaseInstance) throw new Error("Must connect to Database first");
-  return appDatabaseInstance;
-}
-
-export { CONNECT_DB, CLOSE_DB, GET_DB };
-
-//116.111.185.110
-//npm install mongodb
+export { CONNECT_DB, CLOSE_DB };

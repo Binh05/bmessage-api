@@ -1,4 +1,4 @@
-import { tokens } from "../utils/Token.js";
+import { verifyAccessToken } from "../utils/Token.js";
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -7,7 +7,7 @@ const verifyToken = (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    tokens.verifyAccessToken(token);
+    verifyAccessToken(token);
 
     next();
   } catch (error) {
