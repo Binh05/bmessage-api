@@ -1,6 +1,5 @@
 import express from "express";
 import http from "http";
-import { Server } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { env } from "./config/environment.js";
@@ -9,6 +8,7 @@ import { errorHandlingMiddleware } from "./middlewares/errorHandlingMiddleware.j
 import { CONNECT_DB, CLOSE_DB } from "./config/mongodb.js";
 import exitHook from "async-exit-hook";
 import { authRoute } from "./routes/v1/authRoute.js";
+import { protectedRoute } from "./middlewares/authMiddleware.js";
 
 function START_SERVER() {
   const app = express();
@@ -16,35 +16,17 @@ function START_SERVER() {
 
   app.use(express.json());
   app.use(cookieParser());
-
-  const io = new Server(server, {
-    cors: {
-      origin: "http://localhost:3000",
-    },
-  });
-
-  const localhost = "http://localhost:3000/";
-  const deploy = "https://meeting-ecru.vercel.app/";
-
-  app.use(
-    cors({
-      origin: "http://localhost:3000",
-      credentials: true,
-    })
-  );
-
-  //socket realtime
-  //chatSocket(io);
+  app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 
   app.get("/", async (req, res) => {
-    console.log("Collections in DATABASE:");
-    res.end("Hello Binh with socket.io");
+    res.end("Start success");
   });
 
   // public route
   app.use("/v1/auth", authRoute);
 
-  //route
+  app.use(protectedRoute);
+  //private route
   app.use("/v1", Route_V1);
 
   // middlware error global
@@ -60,8 +42,6 @@ function START_SERVER() {
   //   console.log("MongoDB connect closed.");
   // });
 }
-
-// START_SERVER();
 
 (async () => {
   try {
