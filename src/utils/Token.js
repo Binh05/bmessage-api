@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { env } from "../config/environment.js";
 
 const signAccessToken = (data) => {
-  return jwt.sign(data, env.ACCESS_TOKEN_SECRET, { expiresIn: "10s" });
+  return jwt.sign(data, env.ACCESS_TOKEN_SECRET, { expiresIn: "10m" });
 };
 
 const verifyAccessToken = (token) => {
@@ -17,7 +17,7 @@ const verifyRefreshToken = (token) => {
   return jwt.verify(token, env.REFRESH_TOKEN_SECRET);
 };
 
-export const tokens = {
+export {
   signAccessToken,
   verifyAccessToken,
   signRefreshToken,

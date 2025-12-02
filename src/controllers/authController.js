@@ -1,75 +1,122 @@
-import { authService } from "../services/authService.js";
+import User from "../models/User.js";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { signAccessToken } from "../utils/Token.js";
+import Session from "../models/Session.js";
 
-const login = async (req, res, next) => {
+const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
+
+const signUp = async (req, res, next) => {
   try {
-    const { username, password } = req.body;
-    const tokens = await authService.login(username, password);
+    // kiem tra accesstoken
+    const { username, email, phone, password } = req.body;
+    if (!username || !email || !phone || !password) {
+      return res.status(400).json({ message: "Thiếu thông tin đăng nhập" });
+    }
 
-    const { accessToken, refreshToken } = tokens;
+    // kiem tra sdt ton tai hay chua
+    const dulicate = await User.findOne({ phone });
+    if (dulicate) {
+      return res.status(409).json({ message: "sdt da ton tai" });
+    }
 
-    res.cookie("refresh_token", refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/",
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.create({
+      username,
+      email,
+      phone,
+      hashedPassword,
     });
 
-    res.json({ success: true, accessToken });
+    return res.sendStatus(200);
   } catch (error) {
+    console.log("Loi khi goi signup", error);
     next(error);
   }
 };
 
-const signUp = async (req, res, next) => {
+const signIn = async (req, res, next) => {
   try {
-    const signUp = await authService.signUp(req.body);
-    res.status(201).json({ signUp });
+    const { phone, password } = req.body;
+
+    if (!phone || !password)
+      return res
+        .status(400)
+        .json({ message: "Khong the thieu sdt hay password" });
+
+    const user = await User.findOne({ phone });
+    if (!user) {
+      return res.status(401).json({ message: "SDT hoac mat khau khong dung" });
+    }
+
+    const passwordCorrec = await bcrypt.compare(password, user.hashedPassword);
+    if (!passwordCorrec) {
+      return res.status(401).json({ message: "Mat khau khong dung" });
+    }
+
+    const accessToken = signAccessToken({ userId: user._id });
+
+    const refreshToken = crypto.randomBytes(64).toString("hex");
+    Session.create({
+      userId: user._id,
+      refreshToken,
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL),
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: REFRESH_TOKEN_TTL,
+    });
+
+    return res.status(200).json({
+      message: `nguoi dung ${user.username} da dang nhap`,
+      accessToken,
+    });
   } catch (error) {
+    console.log("Loi khi login");
+    next(error);
+  }
+};
+
+const signOut = async (req, res, next) => {
+  try {
+    const token = req.cookies?.refreshToken;
+    if (token) {
+      await Session.deleteOne({ refreshToken: token });
+
+      res.clearCookie("refreshToken");
+    }
+
+    return res.sendStatus(204);
+  } catch (error) {
+    console.log("Loi khi goi signOut");
     next(error);
   }
 };
 
 const refreshToken = async (req, res, next) => {
   try {
-    const token = req.cookies.refresh_token;
-    const accessToken = await authService.refreshToken(token);
-    res.status(200).json({
-      message: "Successed refresh access token",
-      accessToken,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+    const token = req.cookies?.refreshToken;
+    if (!token) return res.status(401).json({ message: "Token khong ton tai" });
 
-const logout = async (req, res, next) => {
-  try {
-    const token = req.cookies.refresh_token;
-    if (!token) {
-      const err = new Error("Refresh token not found");
-      err.status = 400;
-      throw err;
+    const session = await Session.findOne({ refreshToken: token });
+
+    if (!session) {
+      return res
+        .status(403)
+        .json({ message: "token khong hop le hoac da het han" });
     }
-    await authService.logout(token);
 
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "strict",
-      path: "/",
-    });
-    res.status(200).json({
-      message: "Success logout",
-    });
-  } catch (error) {
-    next(error);
-  }
+    if (session.expiresAt < Date.now()) {
+      return res.status(403).json({ message: "token da het han" });
+    }
+
+    const accessToken = signAccessToken({ userId: session.userId });
+    return res.status(200).json({ accessToken });
+  } catch (error) {}
 };
 
-export const authController = {
-  login,
-  signUp,
-  refreshToken,
-  logout,
-};
+export { signUp, signIn, signOut, refreshToken };
