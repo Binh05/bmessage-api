@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const friendSchema = mongoose.Schema(
+const friendSchema = new mongoose.Schema(
   {
     userA: {
       type: mongoose.Schema.Types.ObjectId,

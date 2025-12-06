@@ -1,6 +1,8 @@
 import express from "express";
 import { userRoute } from "./userRoute.js";
 import { friendRoute } from "./friendRoute.js";
+import { messageRoute } from "./messageRoute.js";
+import { conversationRoute } from "./conversationRoute.js";
 
 const Router = express.Router();
 
@@ -10,5 +12,7 @@ Router.get("/", (req, res) => {
 
 Router.use("/user", userRoute);
 Router.use("/friends", friendRoute);
+Router.use("/messages", messageRoute);
+Router.use("/conversations", conversationRoute);
 
 export const Route_V1 = Router;
