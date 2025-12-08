@@ -9,6 +9,8 @@ import { CONNECT_DB, CLOSE_DB } from "./config/mongodb.js";
 import exitHook from "async-exit-hook";
 import { authRoute } from "./routes/v1/authRoute.js";
 import { protectedRoute } from "./middlewares/authMiddleware.js";
+import swaggerUi from "swagger-ui-express";
+import fs from "fs";
 
 function START_SERVER() {
   const app = express();
@@ -21,6 +23,13 @@ function START_SERVER() {
   app.get("/", async (req, res) => {
     res.end("Start success");
   });
+
+  // swagger
+  const swaggerDocument = JSON.parse(
+    fs.readFileSync("./src/swagger.json", "utf8")
+  );
+
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
   // public route
   app.use("/v1/auth", authRoute);
