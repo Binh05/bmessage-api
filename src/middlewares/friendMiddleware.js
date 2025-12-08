@@ -4,25 +4,80 @@ const pair = (userA, userB) =>
   userA < userB ? [userA, userB] : [userA, userB];
 
 export const checkFriendship = async (req, res, next) => {
-  const me = req.user._id.toString();
+  try {
+    const me = req.user._id.toString();
 
-  const recipientId = req.body?.recipientId ?? null;
+    const recipientId = req.body?.recipientId ?? null;
+    const memberIds = req.body?.memberIds ?? [];
 
-  if (!recipientId) {
-    return res.status(400).json({ message: "Thiếu Id người nhận" });
-  }
-
-  if (recipientId) {
-    const [userA, userB] = pair(me, recipientId);
-
-    const friend = await Friend.findOne({ userA, userB });
-
-    if (!friend) {
+    if (!recipientId && memberIds.length === 0) {
       return res
-        .status(403)
-        .json({ message: "Bạn chưa kêt bạn với người này" });
+        .status(400)
+        .json({ message: "Thiếu recipiantId hoặc memberIds" });
     }
 
-    return next();
+    if (recipientId) {
+      const [userA, userB] = pair(me, recipientId);
+
+      const friend = await Friend.findOne({ userA, userB });
+
+      if (!friend) {
+        return res
+          .status(403)
+          .json({ message: "Bạn chưa kêt bạn với người này" });
+      }
+
+      return next();
+    }
+
+    const checkFriends = memberIds.map(async (memberId) => {
+      const [userA, userB] = pair(me, memberId);
+      const friend = await Friend.findOne({ userA, userB });
+      return friend ? null : memberId;
+    });
+
+    const results = await Promise.all(checkFriends);
+    const notFriends = results.filter(Boolean);
+
+    if (notFriends.length > 0) {
+      return res
+        .status(403)
+        .json({ message: "Bạn chỉ có thể tạo nhóm với bạn bè", notFriends });
+    }
+
+    next();
+  } catch (error) {
+    console.log("Lỗi khi checkFriendship", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+export const checkGroupMembership = async (req, res, next) => {
+  try {
+    const { conversationId } = req.body;
+    const userId = req.user._id;
+
+    const conversation = await Conversation.findById(conversationId);
+
+    if (!conversation) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy cuộc trò chuyện" });
+    }
+
+    const isMember = conversation.participants.some(
+      (p) => p.userId.toString() === userId.toString()
+    );
+
+    if (!isMember) {
+      return res.status(403).json({ message: "Bạn không ở trong group này." });
+    }
+
+    req.conversation = conversation;
+
+    next();
+  } catch (error) {
+    console.error("Lỗi checkGroupMembership:", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
   }
 };
