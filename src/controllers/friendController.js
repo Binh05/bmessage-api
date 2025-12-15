@@ -177,6 +177,32 @@ export const getAllFriends = async (req, res, next) => {
   }
 };
 
+export const getNotFriends = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const friends = await Friend.find({
+      $or: [{ userA: userId }, { userB: userId }],
+    });
+
+    const friendIds = friends.map((f) =>
+      f.userA._id.toString() === userId.toString() ? f.userB._id : f.userA._id
+    );
+
+    const users = await User.find({
+      _id: {
+        $ne: userId,
+        $nin: friendIds,
+      },
+    }).select("_id username avatarUrl phone");
+
+    return res.status(200).json({ users });
+  } catch (error) {
+    console.log("Loi khi goi getNotFriends", error);
+    return res.status(500).json({ message: "loi he thong" });
+  }
+};
+
 export const getFriendRequests = async (req, res, next) => {
   try {
     const userId = req.user._id;
@@ -191,6 +217,7 @@ export const getFriendRequests = async (req, res, next) => {
     return res.status(200).json({ send, received });
   } catch (error) {
     console.log("Loi khi lay danh sach loi moi ket ban", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
     next(error);
   }
 };
@@ -227,7 +254,7 @@ export const cancelFriendRequest = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.log("Lỗi khi thu hồi lời mời kết bạn");
+    console.log("Lỗi khi thu hồi lời mời kết bạn", error);
     next(error);
   }
 };

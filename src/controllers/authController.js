@@ -9,8 +9,8 @@ const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
 const signUp = async (req, res, next) => {
   try {
     // kiem tra accesstoken
-    const { username, email, phone, password } = req.body;
-    if (!username || !email || !phone || !password) {
+    const { username, phone, password } = req.body;
+    if (!username || !phone || !password) {
       return res.status(400).json({ message: "Thiếu thông tin đăng nhập" });
     }
 
@@ -24,7 +24,6 @@ const signUp = async (req, res, next) => {
 
     await User.create({
       username,
-      email,
       phone,
       hashedPassword,
     });
@@ -43,11 +42,13 @@ const signIn = async (req, res, next) => {
     if (!phone || !password)
       return res
         .status(400)
-        .json({ message: "Khong the thieu sdt hay password" });
+        .json({ message: "Không thể thiểu sdt hay password" });
 
     const user = await User.findOne({ phone });
     if (!user) {
-      return res.status(401).json({ message: "SDT hoac mat khau khong dung" });
+      return res
+        .status(401)
+        .json({ message: "Số điện thoại hoặc mật khẩu không đúng" });
     }
 
     const passwordCorrec = await bcrypt.compare(password, user.hashedPassword);
@@ -57,23 +58,26 @@ const signIn = async (req, res, next) => {
 
     const accessToken = signAccessToken({ userId: user._id });
 
-    const refreshToken = crypto.randomBytes(64).toString("hex");
+    //const refreshToken = crypto.randomBytes(64).toString("hex");
     Session.create({
       userId: user._id,
-      refreshToken,
+      refreshToken: accessToken,
       expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL),
     });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: REFRESH_TOKEN_TTL,
-    });
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "none",
+    //   maxAge: REFRESH_TOKEN_TTL,
+    // });
 
     return res.status(200).json({
       message: `nguoi dung ${user.username} da dang nhap`,
       accessToken,
+      username: user.username,
+      phone: user.phone,
+      avatarUrl: user?.avatarUrl ?? null,
     });
   } catch (error) {
     console.log("Loi khi login");
