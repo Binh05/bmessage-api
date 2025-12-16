@@ -52,9 +52,17 @@ export const sendFriendRequest = async (req, res, next) => {
 
     const request = await FriendRequest.create({ from, to });
 
+    const populateRequet = await request.populate({
+      path: "to",
+      select: "_id username",
+    });
+
     res
       .status(201)
-      .json({ message: "Gửi lời mời kết bạn thành công", request });
+      .json({
+        message: "Gửi lời mời kết bạn thành công",
+        request: populateRequet,
+      });
   } catch (error) {
     console.log("Loi khi gui loi moi ket ban", error);
     next(error);
@@ -185,14 +193,24 @@ export const getNotFriends = async (req, res) => {
       $or: [{ userA: userId }, { userB: userId }],
     });
 
+    const friendRequests = await FriendRequest.find({
+      $or: [{ from: userId }, { to: userId }],
+    });
+
     const friendIds = friends.map((f) =>
       f.userA._id.toString() === userId.toString() ? f.userB._id : f.userA._id
     );
 
+    const friendRequestIds = friendRequests.map((fr) =>
+      fr.from._id.toString() === userId.toString() ? fr.to._id : fr.from._id
+    );
+
+    const ninIdList = [...friendIds, ...friendRequestIds];
+
     const users = await User.find({
       _id: {
         $ne: userId,
-        $nin: friendIds,
+        $nin: ninIdList,
       },
     }).select("_id username avatarUrl phone");
 
