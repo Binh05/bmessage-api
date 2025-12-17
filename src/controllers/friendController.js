@@ -1,6 +1,8 @@
 import Friend from "../models/Friend.js";
 import FriendRequest from "../models/FriendRequest.js";
 import User from "../models/User.js";
+import Conversation from "../models/Conversation.js";
+import { getIO } from "../sockets/index.js";
 
 export const sendFriendRequest = async (req, res, next) => {
   try {
@@ -57,14 +59,12 @@ export const sendFriendRequest = async (req, res, next) => {
       select: "_id username",
     });
 
-    res
-      .status(201)
-      .json({
-        message: "Gửi lời mời kết bạn thành công",
-        request: populateRequet,
-      });
+    res.status(201).json({
+      message: "Gửi lời mời kết bạn thành công",
+      request: populateRequet,
+    });
   } catch (error) {
-    console.log("Loi khi gui loi moi ket ban", error);
+    console.error("Loi khi gui loi moi ket ban", error);
     next(error);
   }
 };
@@ -88,16 +88,55 @@ export const acceptFriendRequest = async (req, res, next) => {
         .json({ message: "Ban khong co quyen chap nhan loi moi ket ban" });
     }
 
+    // Create friend record
     await Friend.create({
       userA: request.from,
       userB: request.to,
     });
 
-    await FriendRequest.findByIdAndDelete(requestId);
+    let conversation = await Conversation.findOne({
+      participants: {
+        $all: [
+          { $elemMatch: { userId: request.from } },
+          { $elemMatch: { userId: request.to } },
+        ],
+      },
+      type: "direct",
+    });
 
+    // Auto-create direct conversation when users become friends
+    if (!conversation) {
+      conversation = await Conversation.create({
+        type: "direct",
+        participants: [{ userId: request.from }, { userId: request.to }],
+        lastMessageAt: new Date(),
+      });
+    }
+
+    // Populate user data for response
     const from = await User.findById(request.from)
       .select("_id username avatarUrl")
       .lean();
+
+    // Delete friend request
+    await FriendRequest.findByIdAndDelete(requestId);
+
+    // Emit socket event to notify both users about friend status change
+    // try {
+    //   const io = getIO();
+    //   // Notify both users to refetch conversations
+    //   io.to(`user:${request.from}`).emit("friend-accepted", {
+    //     type: "friend-accepted",
+    //     userId: request.to,
+    //     newFriend: from,
+    //   });
+    //   io.to(`user:${request.to}`).emit("friend-accepted", {
+    //     type: "friend-accepted",
+    //     userId: request.from,
+    //   });
+    // } catch (socketErr) {
+    //   console.error("Socket emit error:", socketErr);
+    // }
 
     return res.status(200).json({
       message: "Chap nhan loi moi ket ban thanh cong",
@@ -106,9 +145,10 @@ export const acceptFriendRequest = async (req, res, next) => {
         username: from?.username,
         avatarUrl: from?.avatarUrl,
       },
+      conversation: conversation._id,
     });
   } catch (error) {
-    console.log("Loi khi chap nhan loi moi ket ban", error);
+    console.error("Loi khi chap nhan loi moi ket ban", error);
     next(error);
   }
 };
@@ -147,7 +187,7 @@ export const declineFriendRequest = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.log("Lỗi khi từ chối lời mời kết bạn", error);
+    console.error("Lỗi khi từ chối lời mời kết bạn", error);
     next(error);
   }
 };
@@ -180,7 +220,7 @@ export const getAllFriends = async (req, res, next) => {
 
     return res.status(200).json({ friends });
   } catch (error) {
-    console.log("Loi khi lay danh sach ban be", error);
+    console.error("Loi khi lay danh sach ban be", error);
     next(error);
   }
 };
@@ -216,7 +256,7 @@ export const getNotFriends = async (req, res) => {
 
     return res.status(200).json({ users });
   } catch (error) {
-    console.log("Loi khi goi getNotFriends", error);
+    console.error("Loi khi goi getNotFriends", error);
     return res.status(500).json({ message: "loi he thong" });
   }
 };
@@ -234,7 +274,7 @@ export const getFriendRequests = async (req, res, next) => {
 
     return res.status(200).json({ send, received });
   } catch (error) {
-    console.log("Loi khi lay danh sach loi moi ket ban", error);
+    console.error("Loi khi lay danh sach loi moi ket ban", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
     next(error);
   }
@@ -272,7 +312,7 @@ export const cancelFriendRequest = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.log("Lỗi khi thu hồi lời mời kết bạn", error);
+    console.error("Lỗi khi thu hồi lời mời kết bạn", error);
     next(error);
   }
 };
@@ -290,8 +330,8 @@ export const unfriend = async (req, res, next) => {
       return res.status(404).json({ message: "Bạn bè không tồn tại" });
     }
 
-    const userA = userId.toString();
-    const userB = friendId.toString();
+    let userA = userId.toString();
+    let userB = friendId.toString();
 
     if (userA > userB) {
       [userA, userB] = [userB, userA];
@@ -310,7 +350,7 @@ export const unfriend = async (req, res, next) => {
       .status(200)
       .json({ message: `Hủy kết bạn với ${friend?.username} thành công` });
   } catch (error) {
-    console.log("Lỗi khi hủy kết bạn", error);
+    console.error("Lỗi khi hủy kết bạn", error);
     next(error);
   }
 };

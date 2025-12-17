@@ -10,6 +10,7 @@ import exitHook from "async-exit-hook";
 import { authRoute } from "./routes/v1/authRoute.js";
 import { protectedRoute } from "./middlewares/authMiddleware.js";
 import swaggerUi from "swagger-ui-express";
+import { initSocket } from "./sockets/index.js";
 import fs from "fs";
 
 function START_SERVER() {
@@ -40,6 +41,8 @@ function START_SERVER() {
 
   // middlware error global
   app.use(errorHandlingMiddleware);
+
+  initSocket(server);
 
   server.listen(env.APP_PORT, () => {
     console.log(`server is running at http://${env.APP_HOST}:${env.APP_PORT}`);
