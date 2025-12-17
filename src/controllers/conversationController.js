@@ -24,7 +24,7 @@ export const createConversation = async (req, res, next) => {
       const participantId = memberIds[0];
       conversation = await Conversation.findOne({
         type: "direct",
-        "participants.userId": { all: [userId, participantId] },
+        "participants.userId": { $all: [userId, participantId] },
       });
 
       if (!conversation) {
@@ -66,7 +66,7 @@ export const createConversation = async (req, res, next) => {
 
     return res.status(201).json({ conversation });
   } catch (error) {
-    console.log("Lỗi khi tạo conversation", error);
+    console.error("Lỗi khi tạo conversation", error);
     next(error);
   }
 };
@@ -100,7 +100,7 @@ export const getConversations = async (req, res, next) => {
 
     return res.status(200).json({ conversations: formatted });
   } catch (error) {
-    console.log("Lỗi khi gọi getConversation", error);
+    console.error("Lỗi khi gọi getConversation", error);
     next(error);
   }
 };
@@ -137,5 +137,62 @@ export const getMessages = async (req, res) => {
   } catch (error) {
     console.error("Lỗi xảy ra khi lấy messages", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+export const getUserConversationForSocketIo = async (userId) => {
+  try {
+    const conversations = await Conversation.find(
+      {
+        "participants.userId": userId,
+      },
+      { _id: 1 }
+    );
+
+    return conversations.map((c) => c._id.toString());
+  } catch (error) {
+    console.error("Lỗi khi fetch conversations cho socket.io", error);
+    return [];
+  }
+};
+
+export const markAsRead = async (req, res, next) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
+
+    if (!conversationId) {
+      return res.status(400).json({ message: "conversationId là bắt buộc" });
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation không tồn tại" });
+    }
+
+    // Kiểm tra user có trong conversation này không
+    const isParticipant = conversation.participants.some(
+      (p) => p.userId.toString() === userId.toString()
+    );
+
+    if (!isParticipant) {
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền truy cập conversation này" });
+    }
+
+    // Set unreadCounts[userId] = 0
+    conversation.unreadCounts.set(userId.toString(), 0);
+
+    await conversation.save();
+
+    return res.status(200).json({
+      message: "Đã đánh dấu là đã xem",
+      unreadCounts: Object.fromEntries(conversation.unreadCounts),
+    });
+  } catch (error) {
+    console.error("Lỗi khi mark as read:", error);
+    next(error);
   }
 };

@@ -30,7 +30,7 @@ const signUp = async (req, res, next) => {
 
     return res.sendStatus(200);
   } catch (error) {
-    console.log("Loi khi goi signup", error);
+    console.error("Loi khi goi signup", error);
     next(error);
   }
 };
@@ -75,12 +75,13 @@ const signIn = async (req, res, next) => {
     return res.status(200).json({
       message: `nguoi dung ${user.username} da dang nhap`,
       accessToken,
+      _id: user._id,
       username: user.username,
       phone: user.phone,
       avatarUrl: user?.avatarUrl ?? null,
     });
   } catch (error) {
-    console.log("Loi khi login");
+    console.error("Loi khi login");
     next(error);
   }
 };
@@ -96,7 +97,7 @@ const signOut = async (req, res, next) => {
 
     return res.sendStatus(204);
   } catch (error) {
-    console.log("Loi khi goi signOut");
+    console.error("Loi khi goi signOut");
     next(error);
   }
 };
