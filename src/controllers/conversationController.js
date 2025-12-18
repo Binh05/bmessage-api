@@ -171,7 +171,6 @@ export const markAsRead = async (req, res, next) => {
       return res.status(404).json({ message: "Conversation không tồn tại" });
     }
 
-    // Kiểm tra user có trong conversation này không
     const isParticipant = conversation.participants.some(
       (p) => p.userId.toString() === userId.toString()
     );
@@ -182,7 +181,6 @@ export const markAsRead = async (req, res, next) => {
         .json({ message: "Bạn không có quyền truy cập conversation này" });
     }
 
-    // Set unreadCounts[userId] = 0
     conversation.unreadCounts.set(userId.toString(), 0);
 
     await conversation.save();
