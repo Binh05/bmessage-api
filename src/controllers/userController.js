@@ -47,7 +47,7 @@ export const updateProfile = async (req, res, next) => {
 
     await user.save();
 
-    console.log(`✅ User ${userId} profile updated`);
+    console.log(`User ${userId} profile updated`);
 
     return res.status(200).json({
       message: "Cập nhật thông tin thành công",

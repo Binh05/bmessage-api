@@ -74,7 +74,7 @@ const signIn = async (req, res, next) => {
     // });
 
     return res.status(200).json({
-      message: `nguoi dung ${user.username} da dang nhap`,
+      message: `nguoi dung ${user.username} đã đăng nhập thành công`,
       accessToken,
       _id: user._id,
       username: user.username,

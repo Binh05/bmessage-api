@@ -34,14 +34,13 @@ export const createFeed = async (req, res, next) => {
     const newFeed = new Feed({
       createdBy: userId,
       title,
-      content: imageUrl, // Lưu URL ảnh từ Cloudinary
+      content: imageUrl,
       likeCounts: 0,
       likeBy: [],
     });
 
     await newFeed.save();
 
-    // Populate thông tin creator
     await newFeed.populate({
       path: "createdBy",
       select: "username avatarUrl",
@@ -66,7 +65,6 @@ export const getFeeds = async (req, res, next) => {
 
     let query = {};
 
-    // Nếu có userId, lấy feed của user đó
     if (userId) {
       query.createdBy = userId;
     }
@@ -86,7 +84,6 @@ export const getFeeds = async (req, res, next) => {
       .skip(skip)
       .limit(Number(limit));
 
-    // Đếm tổng feeds
     const total = await Feed.countDocuments(query);
 
     console.log(`Retrieved ${feeds.length} feeds`);
@@ -152,13 +149,11 @@ export const toggleLikeFeed = async (req, res, next) => {
     );
 
     if (isLiked) {
-      // Unlike
       feed.likeBy = feed.likeBy.filter(
         (id) => id.toString() !== userId.toString()
       );
       feed.likeCounts = Math.max(0, feed.likeCounts - 1);
     } else {
-      // Like
       feed.likeBy.push(userId);
       feed.likeCounts += 1;
     }
@@ -170,15 +165,14 @@ export const toggleLikeFeed = async (req, res, next) => {
       select: "username avatarUrl",
     });
 
-    // Emit socket event to all clients
     emitToggleLikeFeed(getIO(), feed);
 
-    console.log(`✅ Feed ${feedId} toggled like`);
+    console.log(`Feed ${feedId} toggled like`);
 
     return res.status(200).json({
       message: isLiked ? "Unlike thành công" : "Like thành công",
       feed,
-      isLiked: !isLiked, // Return new like status
+      isLiked: !isLiked,
     });
   } catch (error) {
     console.error("Lỗi khi like feed:", error);
@@ -186,7 +180,6 @@ export const toggleLikeFeed = async (req, res, next) => {
   }
 };
 
-// Xóa feed
 export const deleteFeed = async (req, res, next) => {
   try {
     const { feedId } = req.params;
@@ -198,7 +191,6 @@ export const deleteFeed = async (req, res, next) => {
       return res.status(404).json({ message: "Feed không tồn tại" });
     }
 
-    // Kiểm tra owner
     if (feed.createdBy.toString() !== userId.toString()) {
       return res
         .status(403)
@@ -207,7 +199,7 @@ export const deleteFeed = async (req, res, next) => {
 
     await Feed.findByIdAndDelete(feedId);
 
-    console.log(`✅ Feed ${feedId} deleted`);
+    console.log(`Feed ${feedId} deleted`);
 
     return res.status(200).json({
       message: "Xóa feed thành công",
@@ -218,7 +210,6 @@ export const deleteFeed = async (req, res, next) => {
   }
 };
 
-// Cập nhật feed
 export const updateFeed = async (req, res, next) => {
   try {
     const { feedId } = req.params;
@@ -231,14 +222,12 @@ export const updateFeed = async (req, res, next) => {
       return res.status(404).json({ message: "Feed không tồn tại" });
     }
 
-    // Kiểm tra owner
     if (feed.createdBy.toString() !== userId.toString()) {
       return res
         .status(403)
         .json({ message: "Bạn không có quyền sửa feed này" });
     }
 
-    // Cập nhật title
     if (title) feed.title = title;
 
     // Cập nhật content (có thể là ảnh)
