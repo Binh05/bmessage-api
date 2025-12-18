@@ -18,6 +18,9 @@ function START_SERVER() {
   const server = http.createServer(app);
 
   app.use(express.json());
+  // Tăng giới hạn payload để hỗ trợ upload ảnh base64 (max 10MB)
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ limit: "10mb", extended: true }));
   app.use(cookieParser());
   app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 

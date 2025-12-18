@@ -62,6 +62,7 @@ const signIn = async (req, res, next) => {
     Session.create({
       userId: user._id,
       refreshToken: accessToken,
+      avatarUrl: user?.avatarUrl ?? null,
       expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL),
     });
 

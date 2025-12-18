@@ -20,6 +20,8 @@ const userSchema = new mongoose.Schema(
     },
     avatarUrl: {
       type: String,
+      default:
+        "https://res.cloudinary.com/dyt536gfk/image/upload/v1765993320/chatapp-mobile/avatar_e9pjjr.jpg",
     },
     avatarId: {
       type: String,
