@@ -209,3 +209,70 @@ export const deleteFeed = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updateFeed = async (req, res, next) => {
+  try {
+    const { feedId } = req.params;
+    const { title, content } = req.body;
+    const userId = req.user._id;
+
+    const feed = await Feed.findById(feedId);
+
+    if (!feed) {
+      return res.status(404).json({ message: "Feed không tồn tại" });
+    }
+
+    if (feed.createdBy.toString() !== userId.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền sửa feed này" });
+    }
+
+    if (title) feed.title = title;
+
+    // Cập nhật content (có thể là ảnh)
+    if (req.file) {
+      // Nếu có file mới từ multer
+      feed.content = req.file.path;
+      console.log(`✅ Image updated on Cloudinary: ${req.file.path}`);
+    } else if (content) {
+      // Nếu content là base64 hoặc string khác
+      if (content.startsWith("data:")) {
+        // Là base64, upload lên Cloudinary
+        try {
+          const result = await cloudinary.uploader.upload(content, {
+            folder: "chatapp-mobile/feeds",
+            allowed_formats: ["jpg", "png", "jpeg", "webp"],
+            transformation: [{ width: 1000, crop: "limit" }],
+          });
+
+          feed.content = result.secure_url;
+          console.log(`✅ Image updated on Cloudinary: ${result.secure_url}`);
+        } catch (uploadError) {
+          console.error("Lỗi upload ảnh lên Cloudinary:", uploadError);
+          // Không cần return error, tiếp tục cập nhật feed
+        }
+      } else {
+        // Là URL hoặc text thông thường
+        feed.content = content;
+      }
+    }
+
+    await feed.save();
+
+    await feed.populate({
+      path: "createdBy",
+      select: "username avatarUrl",
+    });
+
+    console.log(`✅ Feed ${feedId} updated`);
+
+    return res.status(200).json({
+      message: "Cập nhật feed thành công",
+      feed,
+    });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật feed:", error);
+    next(error);
+  }
+};
