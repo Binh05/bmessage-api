@@ -8,14 +8,12 @@ const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
 
 const signUp = async (req, res, next) => {
   try {
-    // kiem tra accesstoken
-    const { username, phone, password } = req.body;
-    if (!username || !phone || !password) {
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
       return res.status(400).json({ message: "Thiếu thông tin đăng nhập" });
     }
 
-    // kiem tra sdt ton tai hay chua
-    const dulicate = await User.findOne({ phone });
+    const dulicate = await User.findOne({ email });
     if (dulicate) {
       return res.status(409).json({ message: "sdt da ton tai" });
     }
@@ -24,7 +22,7 @@ const signUp = async (req, res, next) => {
 
     await User.create({
       username,
-      phone,
+      email,
       hashedPassword,
     });
 
@@ -37,14 +35,14 @@ const signUp = async (req, res, next) => {
 
 const signIn = async (req, res, next) => {
   try {
-    const { phone, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!phone || !password)
+    if (!email || !password)
       return res
         .status(400)
         .json({ message: "Không thể thiểu sdt hay password" });
 
-    const user = await User.findOne({ phone });
+    const user = await User.findOne({ email });
     if (!user) {
       return res
         .status(401)
@@ -58,28 +56,31 @@ const signIn = async (req, res, next) => {
 
     const accessToken = signAccessToken({ userId: user._id });
 
-    //const refreshToken = crypto.randomBytes(64).toString("hex");
+    const refreshToken = crypto.randomBytes(64).toString("hex");
     Session.create({
       userId: user._id,
-      refreshToken: accessToken,
+      token: refreshToken,
       avatarUrl: user?.avatarUrl ?? null,
       expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL),
     });
 
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "none",
-    //   maxAge: REFRESH_TOKEN_TTL,
-    // });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: REFRESH_TOKEN_TTL,
+    });
 
     return res.status(200).json({
       message: `nguoi dung ${user.username} đã đăng nhập thành công`,
       accessToken,
-      _id: user._id,
-      username: user.username,
-      phone: user.phone,
-      avatarUrl: user?.avatarUrl ?? null,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        avatarUrl: user?.avatarUrl ?? null,
+        bio: user?.bio ?? ""
+      }
     });
   } catch (error) {
     console.error("Loi khi login");
@@ -122,7 +123,9 @@ const refreshToken = async (req, res, next) => {
 
     const accessToken = signAccessToken({ userId: session.userId });
     return res.status(200).json({ accessToken });
-  } catch (error) {}
+  } catch (error) {
+    console.error("Lỗi khi gọi refresh token", error)
+  }
 };
 
 export { signUp, signIn, signOut, refreshToken };

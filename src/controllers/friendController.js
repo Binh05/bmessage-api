@@ -252,7 +252,7 @@ export const getNotFriends = async (req, res) => {
         $ne: userId,
         $nin: ninIdList,
       },
-    }).select("_id username avatarUrl phone");
+    }).select("_id username avatarUrl email");
 
     return res.status(200).json({ users });
   } catch (error) {
