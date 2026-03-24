@@ -11,7 +11,23 @@ export const authMe = async (req, res, next) => {
   }
 };
 
-// Cập nhật thông tin user (username, bio)
+export const searchUser = async (req, res, next) => {
+  try {
+    const { username } = req.query;
+
+    const searchedUser = await User.find({ username }).populate(
+      "username avatarUrl",
+    );
+
+    return res.status(200).json({
+      users: searchedUser ?? [],
+    });
+  } catch (error) {
+    console.error("Loi khi tim kiem user", error);
+    next(error);
+  }
+};
+
 export const updateProfile = async (req, res, next) => {
   try {
     const { username, bio } = req.body;
