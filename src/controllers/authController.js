@@ -69,6 +69,7 @@ const signIn = async (req, res, next) => {
       secure: true,
       sameSite: "none",
       maxAge: REFRESH_TOKEN_TTL,
+      path: "/",
     });
 
     return res.status(200).json({
@@ -79,8 +80,8 @@ const signIn = async (req, res, next) => {
         username: user.username,
         email: user.email,
         avatarUrl: user?.avatarUrl ?? null,
-        bio: user?.bio ?? ""
-      }
+        bio: user?.bio ?? "",
+      },
     });
   } catch (error) {
     console.error("Loi khi login");
@@ -124,7 +125,7 @@ const refreshToken = async (req, res, next) => {
     const accessToken = signAccessToken({ userId: session.userId });
     return res.status(200).json({ accessToken });
   } catch (error) {
-    console.error("Lỗi khi gọi refresh token", error)
+    console.error("Lỗi khi gọi refresh token", error);
   }
 };
 
