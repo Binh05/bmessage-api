@@ -1,6 +1,6 @@
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
-import { getIO } from "../sockets/index.js";
+import { io } from "../sockets/index.js";
 import {
   emitNewMessage,
   updateConversationAfterCreateMessage,
@@ -42,11 +42,11 @@ export const sendDirectMessage = async (req, res, next) => {
     updateConversationAfterCreateMessage(conversation, message, senderId);
 
     await conversation.save();
-    emitNewMessage(getIO(), conversation, message);
+    emitNewMessage(io, conversation, message);
 
     return res.status(201).json({ message });
   } catch (error) {
-    console.log("Loi khi gui nhan tin", error), next(error);
+    (console.log("Loi khi gui nhan tin", error), next(error));
   }
 };
 
@@ -69,7 +69,7 @@ export const sendGroupMessage = async (req, res, next) => {
     updateConversationAfterCreateMessage(conversation, message, senderId);
 
     await conversation.save();
-    emitNewMessage(getIO(), conversation, message);
+    emitNewMessage(io, conversation, message);
 
     return res.status(201).json({ message });
   } catch (error) {

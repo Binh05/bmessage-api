@@ -2,32 +2,31 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { env } from "../config/environment.js";
 
-export const socketMiddleware = async (socket, next) => {
+export const socketAuthMiddleware = async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
-
     if (!token) {
-      return next(new Error("Unauthorized - Token khong ton tai"));
+      return next(new Error("Unauthorized - Token không tồn tại"));
     }
 
     const decoded = jwt.verify(token, env.ACCESS_TOKEN_SECRET);
     if (!decoded) {
       return next(
-        new Error("Unauthorized - Token khong hop le hoac da het han")
+        new Error("Unauthorized - Token không hợp lệ hoặc đã hết hạn"),
       );
     }
 
     const user = await User.findById(decoded.userId).select("-hashedPassword");
 
     if (!user) {
-      return next(new Error("User khong ton tai"));
+      return next(new Error("User không tồn tại"));
     }
 
     socket.user = user;
 
     next();
   } catch (error) {
-    console.error("Loi khi verify jwt trong socketMiddleware", error);
+    console.error("Lỗi khi verify JWT trong socketMiddleware", error);
     next(new Error("Unauthorized"));
   }
 };

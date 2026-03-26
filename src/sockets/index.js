@@ -1,95 +1,49 @@
 import { Server } from "socket.io";
-import { env } from "../config/environment.js";
-import { socketMiddleware } from "../middlewares/socketMiddleware.js";
-import { getUserConversationForSocketIo } from "../controllers/conversationController.js";
+import http from "http";
+import express from "express";
+import { socketAuthMiddleware } from "../middlewares/socketMiddleware.js";
+import { getUserConversationsForSocketIO } from "../controllers/conversationController.js";
 
-let io;
+const app = express();
 
-// Map to track online users: userId -> { socketId, connectedAt }
-const onlineUsers = new Map();
+const server = http.createServer(app);
 
-export const initSocket = (server) => {
-  io = new Server(server, {
-    cors: {
-      origin: env.CLIENT_URL,
-      credentials: true,
-    },
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+  },
+});
+
+io.use(socketAuthMiddleware);
+
+const onlineUsers = new Map(); // {userId: socketId}
+
+io.on("connection", async (socket) => {
+  const user = socket.user;
+
+  // console.log(`${user.displayName} online với socket ${socket.id}`);
+
+  onlineUsers.set(user._id, socket.id);
+
+  io.emit("online-users", Array.from(onlineUsers.keys()));
+
+  const conversationIds = await getUserConversationsForSocketIO(user._id);
+  conversationIds.forEach((id) => {
+    socket.join(id);
   });
 
-  io.use(socketMiddleware);
-
-  io.on("connection", async (socket) => {
-    const user = socket.user;
-    const userId = user._id.toString();
-
-    console.log(`${user.username} connected with socket: ${socket.id}`);
-
-    // Track online user
-    onlineUsers.set(userId, {
-      socketId: socket.id,
-      connectedAt: Date.now(),
-      username: user.username,
-    });
-
-    // Broadcast updated online users list to all clients
-    const onlineUsersList = Array.from(onlineUsers.keys());
-
-    io.emit("online-users", onlineUsersList);
-
-    const conversationIds = await getUserConversationForSocketIo(user._id);
-    conversationIds.forEach((id) => socket.join(id));
-
-    // Join user to personal room for direct messages
-    socket.join(`user:${userId}`);
-
-    // Socket event: User typing
-    socket.on("typing", (data) => {
-      const { conversationId } = data;
-      socket.broadcast.emit("user-typing", {
-        userId,
-        conversationId,
-      });
-    });
-
-    socket.on("stop-typing", (data) => {
-      const { conversationId } = data;
-      socket.broadcast.emit("user-stopped-typing", {
-        userId,
-        conversationId,
-      });
-    });
-
-    socket.on("send-message", (data) => {
-      const { conversationId, receiverId } = data;
-      // Send to specific user's room
-      if (receiverId) {
-        socket.broadcast.to(`user:${receiverId}`).emit("new-message", data);
-      }
-      // Broadcast to conversation room
-      io.to(`conversation:${conversationId}`).emit("new-message", data);
-    });
-
-    // Socket disconnect
-    socket.on("disconnect", () => {
-      onlineUsers.delete(userId);
-      const onlineUsersList = Array.from(onlineUsers.keys());
-      io.emit("online-users", onlineUsersList);
-      console.log(`${user.username} disconnected from socket: ${socket.id}`);
-    });
+  socket.on("join-conversation", (conversationId) => {
+    socket.join(conversationId);
   });
 
-  return io;
-};
+  socket.join(user._id.toString());
 
-export const getIO = () => {
-  if (!io) throw new Error("Socket.io not initialized");
-  return io;
-};
+  socket.on("disconnect", () => {
+    onlineUsers.delete(user._id);
+    io.emit("online-users", Array.from(onlineUsers.keys()));
+    /* console.log(`socket disconnected: ${socket.id}`); */
+  });
+});
 
-export const getOnlineUsers = () => {
-  return Array.from(onlineUsers.keys());
-};
-
-export const isUserOnline = (userId) => {
-  return onlineUsers.has(userId.toString());
-};
+export { io, app, server };

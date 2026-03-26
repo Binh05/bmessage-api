@@ -10,13 +10,10 @@ import exitHook from "async-exit-hook";
 import { authRoute } from "./routes/v1/authRoute.js";
 import { protectedRoute } from "./middlewares/authMiddleware.js";
 import swaggerUi from "swagger-ui-express";
-import { initSocket } from "./sockets/index.js";
 import fs from "fs";
+import { app, server } from "./sockets/index.js";
 
 function START_SERVER() {
-  const app = express();
-  const server = http.createServer(app);
-
   app.use(express.json());
   // Tăng giới hạn payload để hỗ trợ upload ảnh base64 (max 10MB)
   app.use(express.json({ limit: "10mb" }));
@@ -30,7 +27,7 @@ function START_SERVER() {
 
   // swagger
   const swaggerDocument = JSON.parse(
-    fs.readFileSync("./src/swagger.json", "utf8")
+    fs.readFileSync("./src/swagger.json", "utf8"),
   );
 
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -44,8 +41,6 @@ function START_SERVER() {
 
   // middlware error global
   app.use(errorHandlingMiddleware);
-
-  initSocket(server);
 
   server.listen(env.APP_PORT, () => {
     console.log(`server is running at http://${env.APP_HOST}:${env.APP_PORT}`);

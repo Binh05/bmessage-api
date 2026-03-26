@@ -1,8 +1,6 @@
 import Friend from "../models/Friend.js";
 import FriendRequest from "../models/FriendRequest.js";
 import User from "../models/User.js";
-import Conversation from "../models/Conversation.js";
-import { getIO } from "../sockets/index.js";
 
 export const sendFriendRequest = async (req, res, next) => {
   try {
@@ -56,7 +54,7 @@ export const sendFriendRequest = async (req, res, next) => {
 
     const populateRequet = await request.populate({
       path: "to",
-      select: "_id username",
+      select: "_id username email avatarUrl",
     });
 
     res.status(201).json({
@@ -88,64 +86,25 @@ export const acceptFriendRequest = async (req, res, next) => {
         .json({ message: "Ban khong co quyen chap nhan loi moi ket ban" });
     }
 
-    // Create friend record
     await Friend.create({
       userA: request.from,
       userB: request.to,
     });
 
-    let conversation = await Conversation.findOne({
-      participants: {
-        $all: [
-          { $elemMatch: { userId: request.from } },
-          { $elemMatch: { userId: request.to } },
-        ],
-      },
-      type: "direct",
-    });
-
-    // Auto-create direct conversation when users become friends
-    if (!conversation) {
-      conversation = await Conversation.create({
-        type: "direct",
-        participants: [{ userId: request.from }, { userId: request.to }],
-        lastMessageAt: new Date(),
-      });
-    }
-
-    // Populate user data for response
-    const from = await User.findById(request.from)
-      .select("_id username avatarUrl")
-      .lean();
-
-    // Delete friend request
     await FriendRequest.findByIdAndDelete(requestId);
 
-    // Emit socket event to notify both users about friend status change
-    // try {
-    //   const io = getIO();
-    //   // Notify both users to refetch conversations
-    //   io.to(`user:${request.from}`).emit("friend-accepted", {
-    //     type: "friend-accepted",
-    //     userId: request.to,
-    //     newFriend: from,
-    //   });
-    //   io.to(`user:${request.to}`).emit("friend-accepted", {
-    //     type: "friend-accepted",
-    //     userId: request.from,
-    //   });
-    // } catch (socketErr) {
-    //   console.error("Socket emit error:", socketErr);
-    // }
+    const from = await User.findById(request.from)
+      .select("_id username email avatarUrl")
+      .lean();
 
     return res.status(200).json({
       message: "Chap nhan loi moi ket ban thanh cong",
       newFriend: {
         _id: from?._id,
         username: from?.username,
+        email: from?.email,
         avatarUrl: from?.avatarUrl,
       },
-      conversation: conversation._id,
     });
   } catch (error) {
     console.error("Loi khi chap nhan loi moi ket ban", error);
@@ -175,14 +134,15 @@ export const declineFriendRequest = async (req, res, next) => {
     await FriendRequest.findByIdAndDelete(requestId);
 
     const from = await User.findById(request.from)
-      .select("_id username avatarUrl")
+      .select("_id username email avatarUrl")
       .lean();
 
     return res.status(201).json({
       message: "Từ chối lời mời kết bạn thành công",
       FriendDecline: {
-        id: from?._id,
+        _id: from?._id,
         username: from?.username,
+        email: from?.email,
         avatarUrl: from?.avatarUrl,
       },
     });
@@ -206,8 +166,8 @@ export const getAllFriends = async (req, res, next) => {
         },
       ],
     })
-      .populate("userA", "_id username avatarUrl")
-      .populate("userB", "_id username avatarUrl")
+      .populate("userA", "_id username email avatarUrl")
+      .populate("userB", "_id username email avatarUrl")
       .lean();
 
     if (!friendShips.length) {
@@ -215,7 +175,7 @@ export const getAllFriends = async (req, res, next) => {
     }
 
     const friends = friendShips.map((f) =>
-      f.userA._id.toString() === userId.toString() ? f.userB : f.userA
+      f.userA._id.toString() === userId.toString() ? f.userB : f.userA,
     );
 
     return res.status(200).json({ friends });
@@ -238,11 +198,11 @@ export const getNotFriends = async (req, res) => {
     });
 
     const friendIds = friends.map((f) =>
-      f.userA._id.toString() === userId.toString() ? f.userB._id : f.userA._id
+      f.userA._id.toString() === userId.toString() ? f.userB._id : f.userA._id,
     );
 
     const friendRequestIds = friendRequests.map((fr) =>
-      fr.from._id.toString() === userId.toString() ? fr.to._id : fr.from._id
+      fr.from._id.toString() === userId.toString() ? fr.to._id : fr.from._id,
     );
 
     const ninIdList = [...friendIds, ...friendRequestIds];
@@ -261,22 +221,21 @@ export const getNotFriends = async (req, res) => {
   }
 };
 
-export const getFriendRequests = async (req, res, next) => {
+export const getFriendRequests = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const populateFields = "_id username avatarUrl";
+    const populateFields = "_id username email avatarUrl";
 
-    const [send, received] = await Promise.all([
+    const [sent, received] = await Promise.all([
       FriendRequest.find({ from: userId }).populate("to", populateFields),
       FriendRequest.find({ to: userId }).populate("from", populateFields),
     ]);
 
-    return res.status(200).json({ send, received });
+    return res.status(200).json({ sent, received });
   } catch (error) {
     console.error("Loi khi lay danh sach loi moi ket ban", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
-    next(error);
   }
 };
 
@@ -298,7 +257,7 @@ export const cancelFriendRequest = async (req, res, next) => {
     }
 
     const to = await User.findById(request.to)
-      .select("_id username avatarUrl")
+      .select("_id username email avatarUrl")
       .lean();
 
     await FriendRequest.findByIdAndDelete(requestId);
@@ -306,8 +265,9 @@ export const cancelFriendRequest = async (req, res, next) => {
     return res.status(200).json({
       message: "Hủy lời mời kết bạn thành công",
       friendCancel: {
-        userId: to?._id,
+        _id: to?._id,
         username: to?.username,
+        email: to?.email,
         avatarUrl: to?.avatarUrl,
       },
     });

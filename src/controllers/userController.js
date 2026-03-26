@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Friend from "../models/Friend.js";
 
 export const authMe = async (req, res, next) => {
   try {
@@ -11,16 +12,36 @@ export const authMe = async (req, res, next) => {
   }
 };
 
-export const searchUser = async (req, res, next) => {
+export const searchUserByEmail = async (req, res, next) => {
   try {
-    const { username } = req.query;
+    const { email } = req.query;
+    const userId = req.user._id;
 
-    const searchedUser = await User.find({ username }).populate(
-      "username avatarUrl",
-    );
+    if (!email || email.trim() == "") {
+      return res.status(400).json({ message: "Email khong duoc de trong" });
+    }
+
+    const searcheduser = await User.findOne({
+      email,
+      _id: { $ne: userId },
+    }).select("_id username email avatarUrl");
+
+    if (!searcheduser) {
+      return res.status(200).json({ user: null });
+    }
+
+    const [userA, userB] =
+      userId < searcheduser._id
+        ? [userId, searcheduser._id]
+        : [searcheduser._id, userId];
+
+    const isFriend = await Friend.exists({ userA, userB });
 
     return res.status(200).json({
-      users: searchedUser ?? [],
+      user: {
+        ...searcheduser.toObject(),
+        isFriend,
+      },
     });
   } catch (error) {
     console.error("Loi khi tim kiem user", error);

@@ -140,13 +140,13 @@ export const getMessages = async (req, res) => {
   }
 };
 
-export const getUserConversationForSocketIo = async (userId) => {
+export const getUserConversationsForSocketIO = async (userId) => {
   try {
     const conversations = await Conversation.find(
       {
         "participants.userId": userId,
       },
-      { _id: 1 }
+      { _id: 1 },
     );
 
     return conversations.map((c) => c._id.toString());
@@ -172,7 +172,7 @@ export const markAsRead = async (req, res, next) => {
     }
 
     const isParticipant = conversation.participants.some(
-      (p) => p.userId.toString() === userId.toString()
+      (p) => p.userId.toString() === userId.toString(),
     );
 
     if (!isParticipant) {
