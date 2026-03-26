@@ -69,7 +69,6 @@ const signIn = async (req, res, next) => {
       secure: true,
       sameSite: "none",
       maxAge: REFRESH_TOKEN_TTL,
-      domain: "https://bmessage.vercel.app",
       path: "/",
     });
 
