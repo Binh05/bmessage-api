@@ -64,7 +64,16 @@ export const createConversation = async (req, res, next) => {
       { path: "lastMessage.senderId", select: "usename avatarUrl" },
     ]);
 
-    return res.status(201).json({ conversation });
+    const participants = conversation.participants.map((p) => ({
+      _id: p.userId?._id,
+      username: p.userId?.username,
+      avatarUrl: p.userId?.avatarUrl ?? null,
+      joinedAt: p.joinedAt,
+    }));
+
+    const formatted = { ...conversation.toObject(), participants };
+
+    return res.status(201).json({ conversation: formatted });
   } catch (error) {
     console.error("Lỗi khi tạo conversation", error);
     next(error);
