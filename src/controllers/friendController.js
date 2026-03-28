@@ -306,9 +306,10 @@ export const unfriend = async (req, res, next) => {
       return res.status(400).json({ message: "Hai người không phải bạn bè" });
     }
 
-    return res
-      .status(200)
-      .json({ message: `Hủy kết bạn với ${friend?.username} thành công` });
+    return res.status(200).json({
+      message: `Hủy kết bạn với ${friend?.username} thành công`,
+      friendshipsId: friendId,
+    });
   } catch (error) {
     console.error("Lỗi khi hủy kết bạn", error);
     next(error);
