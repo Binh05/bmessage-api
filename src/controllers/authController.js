@@ -110,7 +110,7 @@ const refreshToken = async (req, res, next) => {
     const token = req.cookies?.refreshToken;
     if (!token) return res.status(401).json({ message: "Token khong ton tai" });
 
-    const session = await Session.findOne({ refreshToken: token });
+    const session = await Session.findOne({ token });
 
     if (!session) {
       return res
