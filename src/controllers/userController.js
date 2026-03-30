@@ -52,44 +52,24 @@ export const searchUserByEmail = async (req, res, next) => {
 
 export const updateProfile = async (req, res, next) => {
   try {
-    const { username, bio } = req.body;
-    const userId = req.user._id;
+    const { phone, bio } = req.body;
+    const user = req.user;
 
-    if (!username && !bio) {
-      return res.status(400).json({
-        message: "Vui lòng cung cấp ít nhất một trường để cập nhật",
-      });
+    if (!phone && !bio) {
+      return res.status(400).json({ message: "Không có dữ liệu nào thay đổi" });
     }
 
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User không tồn tại" });
-    }
-
-    // Kiểm tra username đã tồn tại (nếu có thay đổi)
-    if (username && username !== user.username) {
-      const existingUser = await User.findOne({ username });
-      if (existingUser) {
-        return res
-          .status(400)
-          .json({ message: "Username này đã được sử dụng" });
-      }
-      user.username = username;
-    }
-
-    // Cập nhật bio
-    if (bio) {
-      user.bio = bio;
-    }
+    if (phone !== undefined) user.phone = phone;
+    if (bio !== undefined) user.bio = bio;
 
     await user.save();
 
-    console.log(`User ${userId} profile updated`);
-
     return res.status(200).json({
-      message: "Cập nhật thông tin thành công",
-      user,
+      message: "Cập nhập thông tin user thành công",
+      data: {
+        phone: user.phone,
+        bio: user.bio,
+      },
     });
   } catch (error) {
     console.error("Lỗi khi cập nhật profile:", error);

@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    phone: {
+      type: String,
+      trim: true,
+    },
     avatarUrl: {
       type: String,
     },
