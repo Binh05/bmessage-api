@@ -1,16 +1,30 @@
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "../config/cloudinary.js";
+import { v2 as cloudinary } from "cloudinary";
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "chatapp-mobile",
-    allowed_formats: ["jpg", "png", "jpeg", "webp"],
-    transformation: [{ width: 800, crop: "limit" }],
+export const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 1024 * 1024 * 5,
   },
 });
 
-const upload = multer({ storage });
-
-export default upload;
+export const uploadImageFromBuffer = (buffer, options) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "bmessage/avatars",
+        resource_type: "image",
+        transformation: [{ width: 200, height: 200, crop: "fill" }],
+        ...options,
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      },
+    );
+    uploadStream.end(buffer);
+  });
+};

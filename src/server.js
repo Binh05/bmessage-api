@@ -1,5 +1,4 @@
 import express from "express";
-import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { env } from "./config/environment.js";
@@ -12,6 +11,7 @@ import { protectedRoute } from "./middlewares/authMiddleware.js";
 import swaggerUi from "swagger-ui-express";
 import fs from "fs";
 import { app, server } from "./sockets/index.js";
+import { v2 as cloudinary } from "cloudinary";
 
 function START_SERVER() {
   app.use(express.json());
@@ -20,6 +20,12 @@ function START_SERVER() {
   app.use(express.urlencoded({ limit: "10mb", extended: true }));
   app.use(cookieParser());
   app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+
+  cloudinary.config({
+    cloud_name: env.CLOUDINARY_CLOUD_NAME,
+    api_key: env.CLOUDINARY_API_KEY,
+    api_secret: env.CLOUDINARY_API_SECRET,
+  });
 
   app.get("/", async (req, res) => {
     res.end("Start success");

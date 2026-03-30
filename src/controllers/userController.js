@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import Friend from "../models/Friend.js";
+import { uploadImageFromBuffer } from "../middlewares/cloudinaryMiddleware.js";
 
 export const authMe = async (req, res, next) => {
   try {
@@ -93,5 +94,39 @@ export const updateProfile = async (req, res, next) => {
   } catch (error) {
     console.error("Lỗi khi cập nhật profile:", error);
     next(error);
+  }
+};
+
+export const uploadAvatar = async (req, res) => {
+  try {
+    const file = req.file;
+    const userId = req.user._id;
+
+    if (!file) {
+      return res.status(400).json({ message: "Thieu file anh" });
+    }
+
+    const result = await uploadImageFromBuffer(file.buffer);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        avatarUrl: result.secure_url,
+        avatarId: result.public_id,
+      },
+      { new: true },
+    ).select("avatarUrl");
+
+    if (!updatedUser.avatarUrl) {
+      return res.status(400).json({ message: "avatar url null" });
+    }
+
+    return res.status(200).json({
+      message: "Upload avatar thành công",
+      avatarUrl: updatedUser.avatarUrl,
+    });
+  } catch (error) {
+    console.error("Lỗi khi upload avatar", error);
+    return res.status(500);
   }
 };
