@@ -28,7 +28,7 @@ function START_SERVER() {
   });
 
   app.get("/", async (req, res) => {
-    res.end("Start success");
+    res.redirect("https://bmessage.vercel.app/");
   });
 
   // swagger
