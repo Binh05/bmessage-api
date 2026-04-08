@@ -5,13 +5,13 @@ import {
   getMessages,
 } from "../../controllers/conversationController.js";
 import { checkFriendship } from "../../middlewares/friendMiddleware.js";
-import { markAsRead } from "../../controllers/conversationController.js";
+import { markAsSeen } from "../../controllers/conversationController.js";
 
 const Router = express.Router();
 
 Router.post("/", checkFriendship, createConversation);
 Router.get("/", getConversations);
 Router.get("/:conversationId/messages", getMessages);
-Router.put("/:conversationId/markasread", markAsRead);
+Router.patch("/:conversationId/seen", markAsSeen);
 
 export const conversationRoute = Router;
