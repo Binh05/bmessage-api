@@ -51,7 +51,9 @@ const signIn = async (req, res, next) => {
 
     const passwordCorrec = await bcrypt.compare(password, user.hashedPassword);
     if (!passwordCorrec) {
-      return res.status(401).json({ message: "Mat khau khong dung" });
+      return res
+        .status(401)
+        .json({ message: "Tài khoản hoặc mật khẩu không đúng" });
     }
 
     const accessToken = signAccessToken({ userId: user._id });
